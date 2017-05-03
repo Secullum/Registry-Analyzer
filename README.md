@@ -1,2 +1,2 @@
 # dll-finder
-CLI tool to easily manage Windows registry
+GUI tool for easily manage Windows registry
