@@ -47,6 +47,14 @@ namespace Registry_Analyzer
                 ButtonSearchClicked?.Invoke(form.TextBoxSearch.Text.Trim());
             };
 
+            form.TextBoxSearch.KeyPress += (sender, e) =>
+            {
+                if (e.KeyChar == (char)Keys.Return)
+                {
+                    form.ButtonSearch.PerformClick();
+                }
+            };
+
             form.ListViewRegistry.ContextMenu = new ContextMenu();
 
             form.ListViewRegistry.ContextMenu.Popup += (sender, e) =>
