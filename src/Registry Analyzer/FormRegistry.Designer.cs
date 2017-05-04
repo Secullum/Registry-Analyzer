@@ -81,7 +81,7 @@
             this.MinimumSize = new System.Drawing.Size(500, 320);
             this.Name = "FormRegistry";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Registry";
+            this.Text = "Analizador do registro do Windows";
             this.ResumeLayout(false);
             this.PerformLayout();
 
