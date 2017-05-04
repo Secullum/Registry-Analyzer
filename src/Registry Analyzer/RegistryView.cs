@@ -56,14 +56,14 @@ namespace Registry_Analyzer
             };
 
             form.ListViewRegistry.ContextMenu = new ContextMenu();
-
-            form.ListViewRegistry.ContextMenu.Popup += (sender, e) =>
+            
+            form.ListViewRegistry.SelectedIndexChanged += (sender, e) =>
             {
-                var itemsCount = form.ListViewRegistry.SelectedItems.Count;
-
-                for (var i = 0; i < itemsCount; i++)
+                var list = form.ListViewRegistry;
+                
+                for (var i = 0; i < list.ContextMenu.MenuItems.Count; i++)
                 {
-                    form.ListViewRegistry.ContextMenu.MenuItems[i].Enabled = itemsCount > 0;
+                    list.ContextMenu.MenuItems[i].Enabled = list.SelectedItems.Count > 0;
                 }
             };
 
