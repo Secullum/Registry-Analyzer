@@ -13,27 +13,34 @@ namespace Registry_Analyzer
         {
             internal string Path;
             internal string Key;
-            internal bool Exists;
         }
         
-        private List<RegistryEntry> FindPaths(RegistryKey baseKey, string term)
+        private List<RegistryKey> FindKeysByTerm(RegistryKey baseKey, string term)
         {
             return baseKey
                 .GetSubKeyNames()
                 .ToList()
                 .Select(name => baseKey.OpenSubKey(name)?.OpenSubKey("0")?.OpenSubKey("win32"))
-                .Where(key => key != null && key.GetValue("") != null && !string.IsNullOrEmpty(key.GetValue("").ToString()))
-                .Select(key => new RegistryEntry
+                .Where(key => key != null)
+                .Where(key => key.GetValue("") != null)
+                .Where(key => !string.IsNullOrEmpty(key.GetValue("").ToString()))
+                .Where(key =>
                 {
-                    Key = key.Name.Substring(key.Name.IndexOf("{"), 38),
-                    Path = key.GetValue("").ToString(),
-                    Exists = File.Exists(key.GetValue("").ToString())
+                    var path = key.GetValue("").ToString();
+
+                    try
+                    {
+                        return Path.GetFileName(path).ToLower().Contains(term);
+                    }
+                    catch (Exception)
+                    {
+                        return false;
+                    }
                 })
-                .Where(entry => Path.GetFileName(entry.Path).ToLower().Contains(term))
                 .ToList();
         }
 
-        private List<RegistryEntry> FindPaths(string term)
+        internal List<RegistryEntry> Search(string term)
         {
             var windowsRegistry = Registry.ClassesRoot.OpenSubKey("TypeLib");
 
@@ -41,13 +48,13 @@ namespace Registry_Analyzer
                 .GetSubKeyNames()
                 .Select(windowsRegistry.OpenSubKey)
                 .Where(key => key != null)
-                .SelectMany(subKey => FindPaths(subKey, term))
+                .SelectMany(subKey => FindKeysByTerm(subKey, term.ToLower()))
+                .Select(key => new RegistryEntry
+                {
+                    Key = key.Name.Substring(key.Name.IndexOf("{"), 38),
+                    Path = key.GetValue("").ToString()
+                })
                 .ToList();
-        }
-
-        internal List<RegistryEntry> Search(string term)
-        {
-            return FindPaths(term.ToLower());
         }
         
         internal void Unregistry(RegistryEntry entry)
@@ -58,9 +65,10 @@ namespace Registry_Analyzer
             {
                 FileName = "cmd.exe",
                 Arguments = $"/C regsvr32 /u /s \"{entry.Path}\" > nul",
-                UseShellExecute = false,
                 WorkingDirectory = Environment.CurrentDirectory,
-                WindowStyle = ProcessWindowStyle.Hidden
+                WindowStyle = ProcessWindowStyle.Hidden,
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
 
             process.Start();

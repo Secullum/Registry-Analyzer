@@ -1,4 +1,6 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.IO;
+using System.Windows.Forms;
 using static Registry_Analyzer.RegistryModel;
 
 namespace Registry_Analyzer
@@ -9,9 +11,17 @@ namespace Registry_Analyzer
 
         internal delegate void UnregistryEventHandler(RegistryEntry entry);
 
+        internal delegate void CopyKeyEventHandler(string key);
+
+        internal delegate void CopyPathEventHandler(string path);
+
         internal event ButtonSearchClickedEventHandler ButtonSearchClicked;
 
         internal event UnregistryEventHandler UnregistryClicked;
+
+        internal event CopyKeyEventHandler CopyKeyClicked;
+
+        internal event CopyPathEventHandler CopyPathClicked;
 
         private readonly FormRegistry form;
 
@@ -41,48 +51,43 @@ namespace Registry_Analyzer
 
             form.ListViewRegistry.ContextMenu.Popup += (sender, e) =>
             {
-                var enable = form.ListViewRegistry.SelectedItems.Count > 0;
+                var itemsCount = form.ListViewRegistry.SelectedItems.Count;
 
-                for (var i = 0; i < form.ListViewRegistry.ContextMenu.MenuItems.Count; i++)
+                for (var i = 0; i < itemsCount; i++)
                 {
-                    form.ListViewRegistry.ContextMenu.MenuItems[i].Enabled = enable;
+                    form.ListViewRegistry.ContextMenu.MenuItems[i].Enabled = itemsCount > 0;
                 }
             };
 
             form.ListViewRegistry.ContextMenu.MenuItems.Add("Copiar chave");
-
+            
             form.ListViewRegistry.ContextMenu.MenuItems[0].Click += (sender, e) =>
             {
-                var subItems = form.ListViewRegistry.SelectedItems[0].SubItems;
-
-                Clipboard.SetText(subItems[0].Text);
+                CopyKeyClicked?.Invoke(SelectedItem(0));
             };
             
             form.ListViewRegistry.ContextMenu.MenuItems.Add("Copiar caminho");
 
             form.ListViewRegistry.ContextMenu.MenuItems[1].Click += (sender, e) =>
             {
-                var subItems = form.ListViewRegistry.SelectedItems[0].SubItems;
-
-                Clipboard.SetText(subItems[1].Text);
+                CopyPathClicked?.Invoke(SelectedItem(1));
             };
 
             form.ListViewRegistry.ContextMenu.MenuItems.Add("Desregistrar");
 
             form.ListViewRegistry.ContextMenu.MenuItems[2].Click += (sender, e) =>
             {
-                if (ConfirmUnregistry())
+                UnregistryClicked?.Invoke(new RegistryEntry
                 {
-                    var subItems = form.ListViewRegistry.SelectedItems[0].SubItems;
-
-                    UnregistryClicked?.Invoke(new RegistryEntry
-                    {
-                        Key = subItems[0].Text,
-                        Path = subItems[1].Text,
-                        Exists = subItems[2].Text == "Sim"
-                    });
-                }
+                    Key = SelectedItem(0),
+                    Path = SelectedItem(1)
+                });
             };
+        }
+
+        private string SelectedItem(int columnIndex)
+        {
+            return form.ListViewRegistry.SelectedItems[0].SubItems[columnIndex].Text;
         }
 
         private void AdjustColumnsSize()
@@ -91,14 +96,7 @@ namespace Registry_Analyzer
             form.ListViewRegistry.Columns[0].Width = 235;
             form.ListViewRegistry.Columns[1].Width = form.ListViewRegistry.Width - 350;
         }
-
-        private bool ConfirmUnregistry()
-        {
-            var response = MessageBox.Show(form, "Desregistrar a entrada selecionada?", "Confirmação", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-
-            return response == DialogResult.Yes;
-        }
-
+        
         internal void ClearGrid()
         {
             form.ListViewRegistry.Items.Clear();
@@ -109,9 +107,16 @@ namespace Registry_Analyzer
             var item = new ListViewItem(entry.Key);
 
             item.SubItems.Add(entry.Path);
-            item.SubItems.Add(entry.Exists ? "Sim" : "Não");
+            item.SubItems.Add(File.Exists(entry.Path) ? "Sim" : "Não");
 
             form.ListViewRegistry.Items.Add(item);
+        }
+
+        internal void RemoveRow(RegistryEntry entry)
+        {
+            var item = form.ListViewRegistry.FindItemWithText(entry.Key);
+
+            form.ListViewRegistry.Items.Remove(item);
         }
     }
 }

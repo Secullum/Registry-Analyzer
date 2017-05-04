@@ -1,4 +1,5 @@
-﻿using static Registry_Analyzer.RegistryModel;
+﻿using System.Windows.Forms;
+using static Registry_Analyzer.RegistryModel;
 
 namespace Registry_Analyzer
 {
@@ -6,7 +7,6 @@ namespace Registry_Analyzer
     {
         private readonly RegistryModel model = new RegistryModel();
         private readonly RegistryView view;
-        private string lastTerm = string.Empty;
 
         internal RegistryPresenter(RegistryView view)
         {
@@ -14,6 +14,8 @@ namespace Registry_Analyzer
             
             view.ButtonSearchClicked += UpdateView;
             view.UnregistryClicked += Unregistry;
+            view.CopyKeyClicked += CopyKey;
+            view.CopyPathClicked += CopyPath;
         }
 
         private void UpdateView(string term)
@@ -26,15 +28,28 @@ namespace Registry_Analyzer
             view.ClearGrid();
 
             model.Search(term).ForEach(view.AddRow);
-
-            lastTerm = term;
         }
 
         private void Unregistry(RegistryEntry entry)
         {
-            model.Unregistry(entry);
+            var response = MessageBox.Show("Desregistrar a entrada selecionada?", "Confirmação", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
-            UpdateView(lastTerm);
+            if (response == DialogResult.Yes)
+            {
+                model.Unregistry(entry);
+
+                view.RemoveRow(entry);
+            }
+        }
+
+        private void CopyKey(string key)
+        {
+            Clipboard.SetText(key);
+        }
+
+        private void CopyPath(string path)
+        {
+            Clipboard.SetText(path);
         }
     }
 }
